@@ -1,0 +1,228 @@
+---
+title: "Guía de Operaciones con Cadenas de Texto"
+subtitle: "Aplicaciones en Análisis Geomático"
+author: "Viviana Andrea Peña González"
+date: "`r Sys.Date()`"
+date-format: "long"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Ver código"
+    embed-resources: true
+    theme: cosmo
+    fontsize: 12pt
+    highlight-style: github
+    css: styles.css
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    colorlinks: true
+    papersize: letter
+    documentclass: article
+    classoption: onecolumn
+engine: knitr
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Introducción {.column-page}
+
+En este documento se presentan soluciones a ejercicios de **operaciones fundamentales con cadenas de texto** orientadas al contexto geomático. En particular, se abordan tareas de:
+
+- **Limpieza de topónimos**: Estandarización de nombres de áreas geográficas
+- **Separación de cadenas**: Parseo de coordenadas desde formatos de texto
+- **Conversión de tipos**: De texto a valores numéricos
+- **Construcción de geometrías**: Generación de formatos WKT (Well-Known Text)
+
+## Relevancia en Análisis Espacial
+
+Estas operaciones son esenciales porque gran parte de los datos geográficos proviene de:
+
+- **Registros manuales**: Inconsistencias en formato y capitalizaciones
+- **Sensores y bases de datos heredadas**: Datos con errores e inconsistencias
+- **Fuentes heterogéneas**: Información que requiere limpieza y estandarización
+
+El dominio de estas técnicas permite garantizar la calidad de datos antes de análisis más complejos.
+
+---
+
+# Ejercicio 1: Limpieza de Topónimos
+
+## Contexto
+
+Se recibe un registro antiguo del IGAC (Instituto Geográfico Agustín Codazzi) con errores de formato del **Parque Nacional Natural Serranía de la Macarena**. El objetivo es estandarizar el nombre para que pueda cruzarse correctamente con sistemas de referencia oficial.
+
+## Enunciado
+
+Dada una cadena de texto con errores de formato, se debe:
+1. Eliminar espacios al inicio y final
+2. Convertir a formato título
+3. Corregir la sigla PNN
+4. Calcular la longitud del nombre resultante
+
+## Solución
+
+```{r}
+cat("=== Ejercicio 1: Limpieza de Topónimos ===\n\n")
+
+# 1. Registro crudo (con errores)
+registro_crudo <- " pnn seRRania de la mACaRena "
+cat("Entrada original:\n")
+cat(sprintf("  '%s'\n", registro_crudo))
+cat(sprintf("  Longitud: %d caracteres\n\n", nchar(registro_crudo)))
+
+# 2. Eliminar espacios al inicio y final
+texto_sin_espacios <- trimws(registro_crudo)
+cat("Paso 1 - Eliminar espacios laterales:\n")
+cat(sprintf("  '%s'\n\n", texto_sin_espacios))
+
+# 3. Convertir a formato título
+library(tools)
+texto_titulo <- toTitleCase(tolower(texto_sin_espacios))
+cat("Paso 2 - Convertir a formato título:\n")
+cat(sprintf("  '%s'\n\n", texto_titulo))
+
+# 4. Reemplazar Pnn por PNN
+registro_oficial <- gsub("Pnn", "PNN", texto_titulo)
+cat("Paso 3 - Corregir sigla PNN:\n")
+cat(sprintf("  '%s'\n\n", registro_oficial))
+
+# 5. Calcular longitud
+longitud_registro <- nchar(registro_oficial)
+
+# 6. Reporte final
+cat("=== RESULTADO FINAL ===\n")
+cat(sprintf("Área protegida estandarizada: %s\n", registro_oficial))
+cat(sprintf("Longitud del nombre: %d caracteres\n", longitud_registro))
+```
+
+## Respuesta
+
+El área protegida limpia es: **`r registro_oficial`** y su nombre tiene **`r longitud_registro` caracteres**.
+
+---
+
+# Ejercicio 2: Parseo de Coordenadas y Construcción de WKT
+
+## Contexto
+
+En análisis geoespacial es común recibir coordenadas almacenadas como texto. Para integrarlas en sistemas de información geográfica (SIG), es necesario convertirlas al estándar **WKT (Well-Known Text)**, que es el formato de serialización de geometrías más ampliamente utilizado.
+
+## Enunciado
+
+Se recibe un mensaje plano enviado por un sensor sísmico ubicado en el Volcán Galeras. El objetivo es extraer el bloque de coordenadas, convertirlo a valores numéricos y generar una geometría WKT POINT con precisión de cuatro decimales. Además, el área afectada debe formatearse con separadores de miles.
+
+## Solución
+
+```{r}
+cat("=== Ejercicio 2: Parseo de mensaje de sensor y WKT ===\n\n")
+
+# 1. Mensaje del sensor sísmico
+mensaje_sensor <- "ALERTA_SISMICA:1.221,-77.359:PROFUNDIDAD_5KM"
+cat("Mensaje original:\n")
+cat(sprintf("  %s\n\n", mensaje_sensor))
+
+# 2. Separar el mensaje por ':' para extraer el bloque de coordenadas
+trozos <- strsplit(mensaje_sensor, ":")[[1]]
+bloque_coords <- trozos[2]
+cat("Bloque de coordenadas extraído:\n")
+cat(sprintf("  %s\n\n", bloque_coords))
+
+# 3. Separar la longitud y la latitud por ','
+coords <- strsplit(bloque_coords, ",")[[1]]
+lat <- as.numeric(coords[1])
+lon <- as.numeric(coords[2])
+cat("Coordenadas numéricas:\n")
+cat(sprintf("  Latitud:  %f\n", lat))
+cat(sprintf("  Longitud: %f\n\n", lon))
+
+# 4. Construir el WKT POINT con 4 decimales
+wkt <- sprintf("POINT(%.4f %.4f)", lon, lat)
+cat("WKT generado:\n")
+cat(sprintf("  %s\n\n", wkt))
+
+# 5. Formatear el área afectada con separador de miles
+area_afectada <- 1250000
+area_formateada <- format(area_afectada, big.mark = ".", scientific = FALSE)
+hectareas <- area_afectada / 10000
+cat("Área afectada:\n")
+cat(sprintf("  %s m²\n", area_formateada))
+cat(sprintf("  %s ha\n\n", format(hectareas, big.mark = ".", scientific = FALSE)))
+
+# 6. Resumen final
+cat("=== RESULTADO FINAL ===\n")
+cat(sprintf("Geometría WKT: %s\n", wkt))
+cat(sprintf("Área afectada: %s m² (%s ha)\n", area_formateada,
+            format(hectareas, big.mark = ".", scientific = FALSE)))
+```
+
+## Respuesta
+
+- **WKT generado**: `r wkt`
+- **Área afectada**: `r area_formateada` m² (`r format(hectareas, big.mark = ".", scientific = FALSE)` ha)
+
+---
+
+# Conclusiones
+
+Este ejercicio ha demostrado la importancia de las operaciones básicas con cadenas de texto en análisis geomático:
+
+1. **Limpieza de datos**: La estandarización de nombres permite integración confiable entre fuentes heterogéneas de información geográfica.
+
+2. **Parseo de mensajes**: Extraer coordenadas desde un mensaje estructurado requiere separar correctamente bloques y convertir valores a tipo numérico antes de construir geometrías.
+
+3. **Estándares WKT**: El uso del formato WKT garantiza compatibilidad entre diferentes plataformas SIG (ArcGIS, QGIS, PostGIS, etc.).
+
+Estas habilidades son la base para trabajar con datos geomáticos reales, donde la calidad de la información depende de la correcta limpieza y procesamiento en etapas tempranas del análisis.
+
+---
+
+# Recursos y Referencias
+
+- **IGAC** (Instituto Geográfico Agustín Codazzi): Base de datos nacional de topónimos
+- **OGC** (Open Geospatial Consortium): Estándar WKT
+- **Función `trimws()`**: Eliminación de espacios en blanco
+- **Función `toTitleCase()`**: Conversión a formato título (paquete `tools`)
+- **Función `strsplit()`**: Separación de cadenas
+- **Función `sprintf()`**: Formateo de cadenas
+- **Función `gsub()`**: Reemplazo de patrones en texto
+
+---
+
+*Documento generado en `r Sys.Date()` | Curso: Práctica en Sistemas de Información Geográfica*
+
+::: {.callout-important}
+El procesamiento del mensaje permitió extraer correctamente las coordenadas del sensor sísmico y construir la geometría `POINT(-77.3590 1.2210)`. El área afectada fue formateada como `1.250.000 m²`, lo que mejora su legibilidad en reportes y productos espaciales.
+:::
+
+::: {.callout-note}
+
+Sobre el ejercicio 2
+
+En la creación de la geometría WKT, si omitieras el paso de convertir el texto extraído a número decimal y construyeras el WKT directamente concatenando los textos originales, el resultado podría parecer correcto pero no sería confiable para cálculos espaciales posteriores en PostGIS o QGIS.
+
+Sin la conversión numérica, las coordenadas podrían ser interpretadas como texto o contener espacios y formatos inconsistentes, lo que dificulta la validación geométrica, la reproyección y los cálculos de distancia.
+
+:::
+
+::: {.callout-note}
+
+Si decidiste resolver el Ejercicio 2 usando R, explica por qué fue necesario utilizar `unlist()` o los dobles corchetes `[[1]]` después de ejecutar la función `strsplit()`.
+
+En R, `strsplit()` no devuelve directamente un vector simple, sino una lista. Esa es una diferencia importante frente a Python y Julia, donde la operación equivalente de `split` devuelve una colección más directa para seguir trabajando. Por eso, después de usar `strsplit()` en R es necesario desempaquetar el resultado con `[[1]]` o convertirlo con `unlist()` antes de intentar operar con sus elementos.
+
+Si este paso se omite, el objeto sigue siendo una lista y no un vector de texto simple. En consecuencia, cualquier intento de convertir coordenadas o aplicar cálculos posteriores puede producir errores. Esta es una de las trampas más comunes al trabajar con separación de cadenas en R.
+
+:::
+
+## Conclusión
+
+Este taller permitió comprender que la manipulación de cadenas de texto es una tarea central dentro del flujo de trabajo geomático. La limpieza de topónimos asegura consistencia en cruces y validaciones con bases de datos institucionales, mientras que el parseo de coordenadas y la construcción de geometrías WKT permiten traducir mensajes crudos o registros textuales en objetos espaciales utilizables.
+
+Además, se evidenció que detalles aparentemente menores, como la eliminación correcta de espacios, el control de decimales o el tipo de salida de una función como `strsplit()`, pueden afectar de manera directa la calidad y la validez de un análisis espacial posterior.
